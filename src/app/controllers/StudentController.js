@@ -50,7 +50,45 @@ class StudentController {
   }
 
   async update(req, res) {
-    return res.json({ ok: true });
+    const schema = Yup.object().shape({
+      name: Yup.string(),
+      email: Yup.email().string(),
+    });
+
+    if (!(await schema.isValid(req.body))) {
+      return res
+        .status(401)
+        .json({ error: 'Falha na validação, verifique seus dados!' });
+    }
+
+    const user = await User.findByPk(req.userId);
+
+    if (!user.administrator) {
+      return res.status(401).json({
+        error: 'Apenas usuários administradores podem editar os registros!',
+      });
+    }
+
+    const { email } = req.body;
+
+    const studentExists = await Student.findOne({ where: { email } });
+
+    if (!studentExists) {
+      return res
+        .status(401)
+        .json({ error: 'Este aluno ainda não foi cadastrado!' });
+    }
+
+    const { id, name, age, weight, height } = await Student.update(req.body);
+
+    return res.json({
+      id,
+      name,
+      email,
+      age,
+      weight,
+      height,
+    });
   }
 }
 
